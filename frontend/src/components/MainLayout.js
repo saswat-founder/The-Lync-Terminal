@@ -9,7 +9,9 @@ import {
   Moon,
   Sun,
   Menu,
-  X
+  X,
+  Activity,
+  UserCog
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -35,13 +37,23 @@ const MainLayout = () => {
   const investorNav = [
     { name: 'Portfolio', path: '/portfolio', icon: LayoutDashboard },
     { name: 'Alerts', path: '/alerts', icon: Bell, badge: criticalAlertCount },
+    { name: 'Reports', path: '/reports', icon: FileText },
+    { name: 'Live Feed', path: '/feed', icon: Activity },
+  ];
+
+  const adminNav = [
+    { name: 'Portfolio', path: '/portfolio', icon: LayoutDashboard },
+    { name: 'Alerts', path: '/alerts', icon: Bell, badge: criticalAlertCount },
+    { name: 'Reports', path: '/reports', icon: FileText },
+    { name: 'Live Feed', path: '/feed', icon: Activity },
+    { name: 'Admin', path: '/admin', icon: UserCog },
   ];
 
   const founderNav = [
     { name: 'Workspace', path: '/founder', icon: FileText },
   ];
 
-  const navigation = isFounder ? founderNav : investorNav;
+  const navigation = isFounder ? founderNav : (currentUser?.role === 'admin' ? adminNav : investorNav);
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 

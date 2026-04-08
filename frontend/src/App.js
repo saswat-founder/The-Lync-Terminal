@@ -7,7 +7,11 @@ import MainLayout from '@/components/MainLayout';
 import PortfolioDashboard from '@/pages/PortfolioDashboard';
 import StartupDetail from '@/pages/StartupDetail';
 import FounderWorkspace from '@/pages/FounderWorkspace';
+import FounderOnboarding from '@/pages/FounderOnboarding';
 import AlertsPage from '@/pages/AlertsPage';
+import ReportsPage from '@/pages/ReportsPage';
+import LiveFeedPage from '@/pages/LiveFeedPage';
+import AdminPage from '@/pages/AdminPage';
 import '@/App.css';
 
 // Route guard component
@@ -59,6 +63,9 @@ function App() {
           <Routes>
             <Route path="/" element={<Landing />} />
             
+            {/* Onboarding */}
+            <Route path="/onboarding" element={<FounderOnboarding />} />
+            
             {/* Main app routes */}
             <Route element={<MainLayout />}>
               {/* Investor routes */}
@@ -83,6 +90,32 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['investor', 'admin']}>
                     <AlertsPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/reports" 
+                element={
+                  <ProtectedRoute allowedRoles={['investor', 'admin']}>
+                    <ReportsPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/feed" 
+                element={
+                  <ProtectedRoute allowedRoles={['investor', 'admin']}>
+                    <LiveFeedPage />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Admin routes */}
+              <Route 
+                path="/admin" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminPage />
                   </ProtectedRoute>
                 } 
               />
