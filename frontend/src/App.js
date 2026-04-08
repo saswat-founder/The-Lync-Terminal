@@ -7,7 +7,7 @@ import MainLayout from '@/components/MainLayout';
 import PortfolioDashboard from '@/pages/PortfolioDashboard';
 import StartupDetail from '@/pages/StartupDetail';
 import FounderWorkspace from '@/pages/FounderWorkspace';
-import FounderOnboarding from '@/pages/FounderOnboarding';
+import EnhancedFounderOnboarding from '@/pages/EnhancedFounderOnboarding';
 import AlertsPage from '@/pages/AlertsPage';
 import ReportsPage from '@/pages/ReportsPage';
 import ReportDetailPage from '@/pages/ReportDetailPage';
@@ -66,7 +66,8 @@ function App() {
             <Route path="/" element={<Landing />} />
             
             {/* Onboarding */}
-            <Route path="/onboarding" element={<FounderOnboarding />} />
+            <Route path="/onboarding" element={<EnhancedFounderOnboarding />} />
+            <Route path="/founder/onboarding" element={<EnhancedFounderOnboarding />} />
             <Route path="/admin/onboarding" element={<AdminOnboarding />} />
             
             {/* Main app routes */}
