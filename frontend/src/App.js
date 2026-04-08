@@ -13,6 +13,7 @@ import ReportsPage from '@/pages/ReportsPage';
 import ReportDetailPage from '@/pages/ReportDetailPage';
 import LiveFeedPage from '@/pages/LiveFeedPage';
 import AdminPage from '@/pages/AdminPage';
+import AdminOnboarding from '@/pages/AdminOnboarding';
 import '@/App.css';
 
 // Route guard component
@@ -66,6 +67,7 @@ function App() {
             
             {/* Onboarding */}
             <Route path="/onboarding" element={<FounderOnboarding />} />
+            <Route path="/admin/onboarding" element={<AdminOnboarding />} />
             
             {/* Main app routes */}
             <Route element={<MainLayout />}>
