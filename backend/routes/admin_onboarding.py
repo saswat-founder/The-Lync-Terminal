@@ -87,6 +87,8 @@ async def bulk_import_companies(
                 "id": str(uuid4()),
                 "workspace_id": import_data.workspace_id,
                 "name": company.name,
+                "logo_url": None,
+                "description": f"{company.name} - {company.stage} stage startup",
                 "stage": company.stage,
                 "sector": company.sector,
                 "website": company.website,
@@ -95,9 +97,12 @@ async def bulk_import_companies(
                 "funding_amount": company.funding_amount or 0,
                 "valuation": company.valuation or 0,
                 "health_status": "unknown",
-                "metrics": {"mrr": 0, "arr": 0, "revenue": 0, "growth_rate": 0, "runway_months": 0, "burn_rate": 0, "cash_balance": 0, "headcount": 0},
+                "health_score": 50,
+                "metrics": {"mrr": 0, "arr": 0, "revenue": 0, "growth_rate": 0, "runway_months": 0, "burn_rate": 0, "cash_balance": 0, "headcount": 0, "customer_count": 0, "churn_rate": 0},
                 "integrations": [],
-                "created_at": datetime.now(timezone.utc)
+                "created_at": datetime.now(timezone.utc),
+                "last_report_date": None,
+                "next_report_due": datetime.now(timezone.utc)
             }
             
             await db.startups.insert_one(startup)
