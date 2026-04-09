@@ -31,6 +31,12 @@ from routes.auth import router as auth_router
 # Import Portfolio routes
 from routes.portfolio import router as portfolio_router
 
+# Import Admin Onboarding routes
+from routes.admin_onboarding import router as admin_onboarding_router
+
+# Import Founder Onboarding routes
+from routes.founder_onboarding import router as founder_onboarding_router
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -143,6 +149,11 @@ app.include_router(zoho_financial_router, prefix="/api")
 # Include HubSpot integration routers
 app.include_router(hubspot_auth_router, prefix="/api")
 app.include_router(hubspot_data_router, prefix="/api")
+
+# Include Admin & Founder Onboarding routers
+app.include_router(admin_onboarding_router, prefix="/api")
+app.include_router(founder_onboarding_router, prefix="/api")
+
 
 # Include Razorpay integration routers
 app.include_router(razorpay_payments_router, prefix="/api")
