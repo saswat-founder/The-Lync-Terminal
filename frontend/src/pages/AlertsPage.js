@@ -1,43 +1,50 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, AlertTriangle, Info, Bell, Check } from 'lucide-react';
-import { mockStartups } from '@/data/mockData';
+import { AlertCircle, AlertTriangle, Info, Bell, Check, Loader2 } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/formatters';
 import AlertCard from '@/components/AlertCard';
 import { toast } from 'sonner';
+import api from '../services/api';
 
 const AlertsPage = () => {
   const navigate = useNavigate();
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [dismissedAlerts, setDismissedAlerts] = useState([]);
   const [activeTab, setActiveTab] = useState('all');
 
-  // Collect all alerts from startups
-  const allAlerts = useMemo(() => {
-    const alerts = [];
-    mockStartups.forEach(startup => {
-      startup.alerts.forEach(alert => {
-        alerts.push({
-          ...alert,
-          startupName: startup.name,
-          startupId: startup.id,
-          startupLogo: startup.logo
-        });
-      });
-    });
-    return alerts
-      .filter(a => !dismissedAlerts.includes(a.id))
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  }, [dismissedAlerts]);
+  // Fetch alerts from backend
+  useEffect(() => {
+    fetchAlerts();
+  }, []);
+
+  const fetchAlerts = async () => {
+    setLoading(true);
+    try {
+      const response = await api.alerts.getAlerts({ limit: 50 });
+      setAlerts(response.data.alerts);
+    } catch (error) {
+      console.error('Failed to fetch alerts:', error);
+      toast.error('Failed to load alerts');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Collect all non-dismissed alerts
+  const allAlerts = alerts
+    .filter(a => !dismissedAlerts.includes(a.id))
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   const criticalAlerts = allAlerts.filter(a => a.severity === 'critical');
   const warningAlerts = allAlerts.filter(a => a.severity === 'warning');
   const infoAlerts = allAlerts.filter(a => a.severity === 'info');
 
-  const displayAlerts = useMemo(() => {
+  const displayAlerts = (() => {
     switch (activeTab) {
       case 'critical':
         return criticalAlerts;
@@ -48,17 +55,31 @@ const AlertsPage = () => {
       default:
         return allAlerts;
     }
-  }, [activeTab, allAlerts, criticalAlerts, warningAlerts, infoAlerts]);
+  })();
 
-  const handleDismiss = (alertId) => {
-    setDismissedAlerts(prev => [...prev, alertId]);
-    toast.success('Alert dismissed');
+  const handleDismiss = async (alertId) => {
+    try {
+      await api.alerts.markAsRead(alertId);
+      setDismissedAlerts(prev => [...prev, alertId]);
+      toast.success('Alert dismissed');
+      fetchAlerts(); // Refresh to get updated data
+    } catch (error) {
+      console.error('Failed to dismiss alert:', error);
+      toast.error('Failed to dismiss alert');
+    }
   };
 
-  const handleDismissAll = () => {
-    const allAlertIds = displayAlerts.map(a => a.id);
-    setDismissedAlerts(prev => [...prev, ...allAlertIds]);
-    toast.success(`${displayAlerts.length} alerts dismissed`);
+  const handleDismissAll = async () => {
+    try {
+      await api.alerts.markAllAsRead();
+      const allAlertIds = displayAlerts.map(a => a.id);
+      setDismissedAlerts(prev => [...prev, ...allAlertIds]);
+      toast.success(`${displayAlerts.length} alerts dismissed`);
+      fetchAlerts(); // Refresh
+    } catch (error) {
+      console.error('Failed to dismiss all alerts:', error);
+      toast.error('Failed to dismiss alerts');
+    }
   };
 
   return (
