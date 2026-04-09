@@ -45,12 +45,13 @@ export const AlertCard = ({ alert, onDismiss, className }) => {
             <p className="text-sm text-muted-foreground mb-2">{alert.message}</p>
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">
-                {alert.source} • {formatRelativeTime(alert.timestamp)}
+                • {formatRelativeTime(alert.created_at)}
               </span>
               {onDismiss && (
                 <button
                   onClick={() => onDismiss(alert.id)}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  data-testid={`dismiss-alert-${alert.id}`}
                 >
                   Dismiss
                 </button>

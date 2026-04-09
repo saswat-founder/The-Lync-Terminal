@@ -1,42 +1,78 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { activityFeed, ALERT_CATEGORIES } from '@/data/mockData';
-import ActivityFeedItem from '@/components/ActivityFeedItem';
-import { Activity, TrendingUp, AlertTriangle, FileText, Filter } from 'lucide-react';
+import { Activity, TrendingUp, AlertTriangle, FileText, Filter, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatRelativeTime } from '@/lib/formatters';
+import api from '../services/api';
 
 const LiveFeedPage = () => {
   const navigate = useNavigate();
-  const [activities, setActivities] = useState(activityFeed);
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
-  
+
+  // Fetch activities from backend
+  useEffect(() => {
+    fetchActivities();
+  }, []);
+
+  const fetchActivities = async () => {
+    setLoading(true);
+    try {
+      const response = await api.feed.getActivities({ page: 1, page_size: 100 });
+      setActivities(response.data.activities || []);
+    } catch (error) {
+      console.error('Failed to fetch activities:', error);
+      toast.error('Failed to load activity feed');
+      setActivities([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calculate stats
   const todayActivity = activities.filter(a => {
-    const activityDate = new Date(a.timestamp);
+    const activityDate = new Date(a.created_at);
     const today = new Date();
     return activityDate.toDateString() === today.toDateString();
   });
 
   const thisWeekActivity = activities.filter(a => {
-    const activityDate = new Date(a.timestamp);
+    const activityDate = new Date(a.created_at);
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     return activityDate > weekAgo;
   });
 
-  const criticalActivities = activities.filter(a => a.severity === 'critical');
-  const warningActivities = activities.filter(a => a.severity === 'warning');
-  const unacknowledged = activities.filter(a => !a.acknowledged);
+  // Filter by type
+  const criticalActivities = activities.filter(a => 
+    a.type === 'alert' || a.type === 'critical_alert'
+  );
+  
+  const reportActivities = activities.filter(a => 
+    a.type === 'report_submitted' || a.type === 'report_approved'
+  );
 
-  const handleAcknowledge = (activityId) => {
-    setActivities(prev => 
-      prev.map(a => a.id === activityId ? { ...a, acknowledged: true } : a)
-    );
-    toast.success('Activity acknowledged');
+  const integrationActivities = activities.filter(a =>
+    a.type === 'integration_connected' || a.type === 'integration_synced'
+  );
+
+  const filteredActivities = () => {
+    switch (activeFilter) {
+      case 'critical':
+        return criticalActivities;
+      case 'reports':
+        return reportActivities;
+      case 'integrations':
+        return integrationActivities;
+      default:
+        return activities;
+    }
   };
 
   const handleNavigate = (startupId) => {
@@ -45,22 +81,50 @@ const LiveFeedPage = () => {
     }
   };
 
-  const filteredActivities = () => {
-    switch (activeFilter) {
-      case 'critical':
-        return criticalActivities;
-      case 'warning':
-        return warningActivities;
-      case 'unacknowledged':
-        return unacknowledged;
-      case 'alerts':
-        return activities.filter(a => 
-          Object.values(ALERT_CATEGORIES).includes(a.category)
-        );
+  const getActivityIcon = (type) => {
+    switch (type) {
+      case 'alert':
+      case 'critical_alert':
+        return <AlertTriangle className="h-4 w-4" />;
+      case 'report_submitted':
+      case 'report_approved':
+        return <FileText className="h-4 w-4" />;
+      case 'integration_connected':
+      case 'integration_synced':
+        return <TrendingUp className="h-4 w-4" />;
       default:
-        return activities;
+        return <Activity className="h-4 w-4" />;
     }
   };
+
+  const getActivityColor = (type) => {
+    switch (type) {
+      case 'alert':
+        return 'text-warning';
+      case 'critical_alert':
+        return 'text-destructive';
+      case 'report_submitted':
+        return 'text-primary';
+      case 'report_approved':
+        return 'text-success';
+      case 'integration_connected':
+      case 'integration_synced':
+        return 'text-blue-500';
+      default:
+        return 'text-muted-foreground';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[600px]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-sm text-muted-foreground">Loading activity feed...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -104,7 +168,7 @@ const LiveFeedPage = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Critical Alerts</p>
+                <p className="text-sm text-muted-foreground">Critical</p>
                 <p className="text-3xl font-semibold tabular-nums text-destructive">
                   {criticalActivities.length}
                 </p>
@@ -119,9 +183,9 @@ const LiveFeedPage = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Unacknowledged</p>
-                <p className="text-3xl font-semibold tabular-nums">{unacknowledged.length}</p>
-                <p className="text-xs text-muted-foreground mt-1">pending review</p>
+                <p className="text-sm text-muted-foreground">Reports</p>
+                <p className="text-3xl font-semibold tabular-nums">{reportActivities.length}</p>
+                <p className="text-xs text-muted-foreground mt-1">submitted</p>
               </div>
               <FileText className="h-8 w-8 text-warning" />
             </div>
@@ -142,12 +206,11 @@ const LiveFeedPage = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeFilter} onValueChange={setActiveFilter}>
-            <TabsList className="grid w-full grid-cols-5 mb-4">
+            <TabsList className="grid w-full grid-cols-4 mb-4">
               <TabsTrigger value="all">All ({activities.length})</TabsTrigger>
               <TabsTrigger value="critical">Critical ({criticalActivities.length})</TabsTrigger>
-              <TabsTrigger value="warning">Warning ({warningActivities.length})</TabsTrigger>
-              <TabsTrigger value="alerts">Alerts</TabsTrigger>
-              <TabsTrigger value="unacknowledged">Unack. ({unacknowledged.length})</TabsTrigger>
+              <TabsTrigger value="reports">Reports ({reportActivities.length})</TabsTrigger>
+              <TabsTrigger value="integrations">Integrations ({integrationActivities.length})</TabsTrigger>
             </TabsList>
             
             <TabsContent value={activeFilter}>
@@ -158,17 +221,56 @@ const LiveFeedPage = () => {
                       <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-semibold mb-2">No activities</h3>
                       <p className="text-sm text-muted-foreground">
-                        No {activeFilter !== 'all' && activeFilter} activities to show
+                        {activities.length === 0 
+                          ? "No activities recorded yet"
+                          : `No ${activeFilter !== 'all' ? activeFilter : ''} activities to show`}
                       </p>
                     </div>
                   ) : (
                     filteredActivities().map(activity => (
-                      <ActivityFeedItem 
-                        key={activity.id} 
-                        activity={activity}
-                        onClick={() => handleNavigate(activity.startupId)}
-                        onAcknowledge={handleAcknowledge}
-                      />
+                      <div
+                        key={activity.id}
+                        className="flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                        onClick={() => handleNavigate(activity.startup_id)}
+                      >
+                        <div className={`mt-1 p-2 rounded-full bg-muted ${getActivityColor(activity.type)}`}>
+                          {getActivityIcon(activity.type)}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">{activity.title}</p>
+                              {activity.startup_name && (
+                                <p className="text-xs text-muted-foreground">
+                                  {activity.startup_name}
+                                </p>
+                              )}
+                            </div>
+                            <Badge variant="outline" className="text-xs shrink-0">
+                              {activity.type.replace(/_/g, ' ')}
+                            </Badge>
+                          </div>
+                          
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {activity.description}
+                          </p>
+                          
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span>{activity.actor || 'System'}</span>
+                            <span>•</span>
+                            <span>{formatRelativeTime(activity.created_at)}</span>
+                            {activity.actor_role && (
+                              <>
+                                <span>•</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {activity.actor_role}
+                                </Badge>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     ))
                   )}
                 </div>
@@ -178,21 +280,16 @@ const LiveFeedPage = () => {
         </CardContent>
       </Card>
 
-      {/* Alert Categories Reference */}
+      {/* Info Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Alert Categories</CardTitle>
+          <CardTitle className="text-base">About Activity Feed</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {Object.entries(ALERT_CATEGORIES).map(([key, value]) => (
-              <Badge key={key} variant="outline" className="justify-center py-2">
-                {key.replace(/_/g, ' ').toLowerCase()}
-              </Badge>
-            ))}
-          </div>
-          <p className="text-sm text-muted-foreground mt-4">
-            The alert engine monitors these categories and generates actionable signals when thresholds are crossed.
+          <p className="text-sm text-muted-foreground">
+            The activity feed monitors real-time events across your portfolio including alerts, 
+            report submissions, integration syncs, and system events. Activities are automatically 
+            logged and categorized for easy tracking.
           </p>
         </CardContent>
       </Card>

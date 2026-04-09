@@ -186,14 +186,13 @@ const AlertsPage = () => {
                 <div key={alert.id}>
                   <div 
                     className="flex items-center gap-2 mb-2 cursor-pointer hover:underline"
-                    onClick={() => navigate(`/startup/${alert.startupId}`)}
+                    onClick={() => navigate(`/startup/${alert.startup_id}`)}
+                    data-testid={`alert-startup-link-${alert.id}`}
                   >
-                    <img 
-                      src={alert.startupLogo} 
-                      alt={alert.startupName} 
-                      className="h-6 w-6 rounded"
-                    />
-                    <span className="text-sm font-medium">{alert.startupName}</span>
+                    <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
+                      {alert.startup_name?.charAt(0) || 'S'}
+                    </div>
+                    <span className="text-sm font-medium">{alert.startup_name}</span>
                   </div>
                   <AlertCard alert={alert} onDismiss={handleDismiss} />
                 </div>
