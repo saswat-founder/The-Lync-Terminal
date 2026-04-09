@@ -46,17 +46,17 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from 'recharts';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency, formatPercentage, formatDate, getChartColor } from '@/lib/formatters';
 import MetricCard from '@/components/MetricCard';
 import FinancialMetricsDashboard from '@/components/FinancialMetricsDashboard';
 
 const FounderHome = () => {
-  const { currentUser } = useAuth();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('chat');
 
   // Mock data - in production comes from integrations
-  const startup = currentUser?.startup || {
+  const startup = user?.startup || {
     name: 'Your Startup',
     metrics: {
       cash: 1500000,
