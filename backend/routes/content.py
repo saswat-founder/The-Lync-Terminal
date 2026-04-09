@@ -165,8 +165,13 @@ async def get_reports(
     if status:
         query["status"] = status
     
-    # Get reports
-    reports_cursor = db.reports.find(query, {"_id": 0}).sort("created_at", -1).limit(limit)
+    # Get reports (with projection for performance)
+    reports_cursor = db.reports.find(
+        query, 
+        {"_id": 0, "id": 1, "startup_id": 1, "startup_name": 1, "report_type": 1, 
+         "period": 1, "status": 1, "summary_metrics": 1, "created_at": 1, 
+         "submitted_at": 1, "approved_at": 1, "sections": 1}
+    ).sort("created_at", -1).limit(limit)
     reports_list = await reports_cursor.to_list(length=limit)
     
     # Calculate counts

@@ -1,19 +1,20 @@
 from functools import lru_cache
 from pydantic_settings import BaseSettings
 from typing import Optional
+import os
 
 
 class Settings(BaseSettings):
     # Zoho Books OAuth
     zoho_client_id: str = ""
     zoho_client_secret: str = ""
-    zoho_redirect_uri: str = "http://localhost:8001/api/auth/zoho/callback"
+    zoho_redirect_uri: str = os.getenv("ZOHO_REDIRECT_URI", "http://localhost:8001/api/auth/zoho/callback")
     zoho_api_domain: str = "https://www.zohoapis.com"
     
     # HubSpot OAuth
     hubspot_client_id: str = ""
     hubspot_client_secret: str = ""
-    hubspot_redirect_uri: str = "http://localhost:8001/api/auth/hubspot/callback"
+    hubspot_redirect_uri: str = os.getenv("HUBSPOT_REDIRECT_URI", "http://localhost:8001/api/auth/hubspot/callback")
     
     # Razorpay API
     razorpay_key_id: str = ""
@@ -23,7 +24,7 @@ class Settings(BaseSettings):
     # GitHub OAuth
     github_client_id: str = ""
     github_client_secret: str = ""
-    github_redirect_uri: str = "http://localhost:8001/api/auth/github/callback"
+    github_redirect_uri: str = os.getenv("GITHUB_REDIRECT_URI", "http://localhost:8001/api/auth/github/callback")
     
     # Database (using existing MongoDB)
     mongo_url: str

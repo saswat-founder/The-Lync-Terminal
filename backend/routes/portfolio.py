@@ -41,8 +41,11 @@ async def get_portfolio_overview(
     else:  # Admin
         query = {}
     
-    # Get all startups
-    startups = await db.startups.find(query, {"_id": 0}).to_list(1000)
+    # Get all startups (limit to reasonable number for overview)
+    startups = await db.startups.find(
+        query, 
+        {"_id": 0, "id": 1, "name": 1, "health_status": 1, "stage": 1, "metrics": 1}
+    ).limit(500).to_list(500)
     
     if not startups:
         # Return empty overview if no startups
@@ -71,9 +74,12 @@ async def get_portfolio_overview(
     warning_count = sum(1 for s in startups if s.get("health_status") == HealthStatus.WARNING.value)
     critical_count = sum(1 for s in startups if s.get("health_status") == HealthStatus.CRITICAL.value)
     
-    # Get alerts
+    # Get alerts (only fetch necessary fields)
     alert_query = {"startup_id": {"$in": [s["id"] for s in startups]}, "dismissed": False}
-    alerts = await db.alerts.find(alert_query, {"_id": 0}).to_list(1000)
+    alerts = await db.alerts.find(
+        alert_query, 
+        {"_id": 0, "severity": 1, "dismissed": 1}
+    ).limit(200).to_list(200)
     
     total_alerts = len(alerts)
     critical_alerts = sum(1 for a in alerts if a.get("severity") == AlertSeverity.CRITICAL.value)
@@ -141,7 +147,8 @@ async def get_startups(
     if health_status:
         query["health_status"] = health_status
     
-    startups = await db.startups.find(query, {"_id": 0}).to_list(1000)
+    # Fetch startups with pagination support
+    startups = await db.startups.find(query, {"_id": 0}).limit(200).to_list(200)
     
     return [StartupResponse(**s) for s in startups]
 
