@@ -245,6 +245,34 @@ const api = {
     
     update: (id, reportData) => 
       apiClient.put(`/api/reports/${id}`, reportData),
+
+  // ============ Admin Onboarding APIs ============
+  adminOnboarding: {
+    createWorkspace: (data) => 
+      apiClient.post('/api/admin/workspace', data),
+    
+    bulkImportCompanies: (data) => 
+      apiClient.post('/api/admin/companies/bulk', data),
+    
+    inviteTeamMembers: (data) => 
+      apiClient.post('/api/admin/team/invite', data),
+    
+    inviteFounders: (data) => 
+      apiClient.post('/api/admin/founders/invite', data),
+  },
+
+  // ============ Founder Onboarding APIs ============
+  founderOnboarding: {
+    verifyInvitation: (token) => 
+      apiClient.get(`/api/founder/invitation/${token}`),
+    
+    completeOnboarding: (data) => 
+      apiClient.post('/api/founder/onboarding/complete', data),
+    
+    getOnboardingStatus: (startupId) => 
+      apiClient.get(`/api/founder/onboarding/status/${startupId}`),
+  },
+
   },
 
   // ============ Feed APIs ============

@@ -37,13 +37,17 @@ import {
   UserPlus,
   FileSpreadsheet,
   Mail,
-  Trash2
+  Trash2,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import api from '../services/api';
 
 const AdminOnboarding = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [workspaceId, setWorkspaceId] = useState(null);
   const totalSteps = 6;
   
   const [formData, setFormData] = useState({
@@ -93,7 +97,7 @@ const AdminOnboarding = () => {
     { num: 6, title: 'Rules & Metrics', icon: Settings }
   ];
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // Validate current step
     if (step === 1 && (!formData.orgName || !formData.email)) {
       toast.error('Please fill required fields');
@@ -103,11 +107,58 @@ const AdminOnboarding = () => {
     if (step < totalSteps) {
       setStep(step + 1);
     } else {
-      // Complete onboarding
-      toast.success('Workspace setup complete!', {
-        description: 'Landing you on your portfolio command center'
-      });
-      setTimeout(() => navigate('/admin'), 1500);
+      // Complete onboarding - call backend APIs
+      setLoading(true);
+      try {
+        const workspaceData = {
+          org_name: formData.orgName,
+          user_name: formData.userName,
+          email: formData.email,
+          country: formData.country,
+          use_case: formData.useCase,
+          fund_name: formData.fundName,
+          logo_url: formData.logo,
+          currency: formData.currency,
+          reporting_frequency: formData.reportingFrequency,
+          timezone: formData.timezone,
+          portfolio_unit: formData.portfolioUnit,
+          investment_stages: formData.investmentStages,
+          sectors: formData.sectors,
+          health_score_template: formData.healthScoreTemplate,
+          runway_threshold: formData.runwayThreshold,
+          required_sections: formData.requiredSections,
+          mandatory_metrics: formData.mandatoryMetrics,
+          alert_recipients: formData.alertRecipients,
+          founder_can_edit: formData.founderCanEdit
+        };
+        
+        const workspaceResponse = await api.adminOnboarding.createWorkspace(workspaceData);
+        toast.success('✅ Workspace created!');
+        
+        if (formData.teamMembers.length > 0) {
+          await api.adminOnboarding.inviteTeamMembers({
+            workspace_id: workspaceResponse.data.id,
+            members: formData.teamMembers
+          });
+        }
+        
+        if (formData.companies.length > 0) {
+          await api.adminOnboarding.bulkImportCompanies({
+            workspace_id: workspaceResponse.data.id,
+            companies: formData.companies,
+            send_founder_invites: false
+          });
+        }
+        
+        toast.success('🎉 Onboarding complete!');
+        setTimeout(() => navigate('/portfolio'), 2000);
+        
+      } catch (error) {
+        console.error('Onboarding error:', error);
+        toast.error(error.response?.data?.detail || 'Failed to complete onboarding');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
