@@ -140,7 +140,8 @@ const IntegrationsPage = () => {
     }
 
     // OAuth integrations - redirect to backend OAuth flow
-    const authUrl = `${process.env.REACT_APP_BACKEND_URL}/api/auth/${integrationId}/authorize?organization_id=${orgId}`;
+    // Use window.location.origin for OAuth redirects to work across all environments
+    const authUrl = `${window.location.origin}/api/auth/${integrationId}/authorize?organization_id=${orgId}`;
     window.location.href = authUrl;
   };
 
