@@ -13,7 +13,7 @@ import {
   Activity,
   UserCog
 } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import UserMenu from '@/components/UserMenu';
 import { cn } from '@/lib/utils';
@@ -23,9 +23,14 @@ import { mockStartups } from '@/data/mockData';
 const MainLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentUser, isInvestor, isFounder } = useAuth();
+  const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+
+  // Helper to check roles
+  const isFounder = user?.role === 'founder';
+  const isInvestor = user?.role === 'investor';
+  const isAdmin = user?.role === 'admin';
 
   // Count critical alerts
   const criticalAlertCount = React.useMemo(() => {
@@ -53,7 +58,7 @@ const MainLayout = () => {
     { name: 'Workspace', path: '/founder', icon: FileText },
   ];
 
-  const navigation = isFounder ? founderNav : (currentUser?.role === 'admin' ? adminNav : investorNav);
+  const navigation = isFounder ? founderNav : (isAdmin ? adminNav : investorNav);
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
@@ -171,9 +176,9 @@ const MainLayout = () => {
               © 2024 Startup Intel. Built for StartupTN Portfolio Monitoring.
             </p>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span>Logged in as: {currentUser?.name}</span>
+              <span>Logged in as: {user?.name}</span>
               <span>•</span>
-              <span className="capitalize">{currentUser?.role}</span>
+              <span className="capitalize">{user?.role}</span>
             </div>
           </div>
         </div>
