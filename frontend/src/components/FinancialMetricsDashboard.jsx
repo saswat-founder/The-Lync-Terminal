@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   TrendingUp,
   TrendingDown,
@@ -11,73 +12,154 @@ import {
   CreditCard,
   AlertTriangle,
   RefreshCw,
-  Calendar
+  Calendar,
+  Loader2,
+  Link as LinkIcon
 } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 const FinancialMetricsDashboard = () => {
-  const [metrics, setMetrics] = useState({
-    zoho: null,
-    razorpay: null,
-    hubspot: null
-  });
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [timeRange, setTimeRange] = useState('month'); // month, quarter, year
+  const [error, setError] = useState(null);
+  const [zohoConnected, setZohoConnected] = useState(false);
+
+  const orgId = user?.organization_id || user?.id || 'default_org';
 
   useEffect(() => {
-    fetchAllMetrics();
-  }, []);
+    fetchFinancialMetrics();
+    checkZohoConnection();
+  }, [orgId]);
 
-  const fetchAllMetrics = async () => {
+  const checkZohoConnection = async () => {
+    try {
+      const response = await api.integrations.zoho.getStatus(orgId);
+      setZohoConnected(response.data.connected);
+    } catch (err) {
+      console.error('Failed to check Zoho connection:', err);
+    }
+  };
+
+  const fetchFinancialMetrics = async () => {
     setLoading(true);
-    const orgId = 'default_org';
+    setError(null);
 
     try {
-      // Fetch Zoho Books metrics
-      const zohoResponse = await fetch(
-        `${BACKEND_URL}/api/financial/metrics?organization_id=${orgId}`
-      );
-      if (zohoResponse.ok) {
-        const zohoData = await zohoResponse.json();
-        setMetrics(prev => ({ ...prev, zoho: zohoData }));
+      const response = await api.financial.getOverview(orgId);
+      setMetrics(response.data);
+    } catch (err) {
+      console.error('Error fetching financial metrics:', err);
+      setError(err.response?.data?.detail || 'Failed to load financial data');
+      
+      // If error is due to no Zoho connection, show appropriate message
+      if (err.response?.status === 404 || err.response?.status === 400) {
+        setError('No financial data available. Please connect Zoho Books.');
       }
-    } catch (error) {
-      console.error('Error fetching Zoho metrics:', error);
+    } finally {
+      setLoading(false);
     }
-
-    try {
-      // Fetch Razorpay metrics
-      const razorpayResponse = await fetch(
-        `${BACKEND_URL}/api/payments/razorpay/metrics?organization_id=${orgId}`
-      );
-      if (razorpayResponse.ok) {
-        const razorpayData = await razorpayResponse.json();
-        setMetrics(prev => ({ ...prev, razorpay: razorpayData }));
-      }
-    } catch (error) {
-      console.error('Error fetching Razorpay metrics:', error);
-    }
-
-    try {
-      // Fetch HubSpot revenue metrics
-      const hubspotResponse = await fetch(
-        `${BACKEND_URL}/api/hubspot/deals/revenue?organization_id=${orgId}`
-      );
-      if (hubspotResponse.ok) {
-        const hubspotData = await hubspotResponse.json();
-        setMetrics(prev => ({ ...prev, hubspot: hubspotData }));
-      }
-    } catch (error) {
-      console.error('Error fetching HubSpot metrics:', error);
-    }
-
-    setLoading(false);
   };
 
   const handleRefresh = async () => {
+    setSyncing(true);
+    try {
+      await fetchFinancialMetrics();
+      toast.success('Financial data refreshed');
+    } catch (err) {
+      toast.error('Failed to refresh data');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const formatCurrency = (value) => {
+    if (!value && value !== 0) return 'N/A';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error || !zohoConnected) {
+    return (
+      <div className="space-y-4">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            {error || 'Zoho Books is not connected. Please connect it to view financial metrics.'}
+          </AlertDescription>
+        </Alert>
+        <Button onClick={() => navigate('/integrations')}>
+          <LinkIcon className="w-4 h-4 mr-2" />
+          Go to Integrations
+        </Button>
+      </div>
+    );
+  }
+
+  if (!metrics) {
+    return (
+      <Alert>
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          No financial data available yet. Data will appear after Zoho Books syncs.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  // Mock data structure for display (would come from API)
+  const financialData = {
+    cash_balance: metrics.cash_balance || 0,
+    monthly_revenue: metrics.monthly_revenue || 0,
+    burn_rate: metrics.burn_rate || 0,
+    runway_months: metrics.runway_months || 0,
+    mrr: metrics.mrr || 0,
+    arr: metrics.arr || 0,
+    growth_rate: metrics.growth_rate || 0
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Financial Metrics</h2>
+          <p className="text-sm text-muted-foreground">
+            Real-time financial data from Zoho Books
+            <Badge variant="outline" className="ml-2">Live Data</Badge>
+          </p>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={handleRefresh}
+          disabled={syncing}
+        >
+          {syncing ? (
+            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Syncing</>
+          ) : (
+            <><RefreshCw className="w-4 h-4 mr-2" /> Refresh</>
+          )}
+        </Button>
+      </div>
     setSyncing(true);
     await fetchAllMetrics();
     setSyncing(false);
