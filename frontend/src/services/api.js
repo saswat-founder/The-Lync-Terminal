@@ -5,6 +5,7 @@
 
 import axios from 'axios';
 import authService from './authService';
+import { toast } from 'sonner';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -37,6 +38,12 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Network error (no response from server)
+    if (!error.response) {
+      toast.error('Network error. Please check your connection.');
+      return Promise.reject(error);
+    }
+
     // If 401 and we haven't tried to refresh yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
@@ -52,6 +59,7 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         // Refresh failed - logout user
         authService.logout();
+        toast.error('Session expired. Please login again.');
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }

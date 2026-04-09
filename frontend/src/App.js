@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { Toaster } from '@/components/ui/sonner';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import MainLayout from '@/components/MainLayout';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -22,9 +23,10 @@ import '@/App.css';
 
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <BrowserRouter>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <BrowserRouter>
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
@@ -155,6 +157,7 @@ function App() {
         </BrowserRouter>
       </AuthProvider>
     </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
