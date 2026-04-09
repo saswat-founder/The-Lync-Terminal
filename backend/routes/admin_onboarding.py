@@ -18,6 +18,11 @@ from models.workspace_models import (
 )
 from models.user_models import TokenData
 from middleware.auth import get_current_user
+from services.email_service import (
+    send_email,
+    generate_team_invitation_email,
+    generate_founder_invitation_email
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -137,6 +142,9 @@ async def invite_team_members(
     invitation_ids = []
     invited_emails = []
     
+    # Get workspace for email context
+    workspace = await db.workspaces.find_one({"id": invite_data.workspace_id}, {"_id": 0})
+    
     for member in invite_data.members:
         invitation_token = secrets.token_urlsafe(32)
         invitation = {
@@ -154,6 +162,26 @@ async def invite_team_members(
         await db.invitations.insert_one(invitation)
         invitation_ids.append(invitation["id"])
         invited_emails.append(member.email)
+        
+        # Send invitation email
+        try:
+            email_html = generate_team_invitation_email(
+                recipient_name=member.name,
+                workspace_name=workspace.get("fund_name", "the workspace"),
+                invited_by=current_user.email,
+                role=member.role,
+                invitation_token=invitation_token
+            )
+            
+            await send_email(
+                to_email=member.email,
+                subject=f"You're invited to join {workspace.get('fund_name', 'Startup Intel')}",
+                html_content=email_html
+            )
+            logger.info(f"Invitation email sent to {member.email}")
+        except Exception as e:
+            logger.error(f"Failed to send email to {member.email}: {str(e)}")
+            # Continue even if email fails
     
     logger.info(f"Team invitations sent: {len(invited_emails)} members")
     
@@ -179,6 +207,9 @@ async def invite_founders(
     invitation_ids = []
     invited_startups = []
     
+    # Get workspace for email context
+    workspace = await db.workspaces.find_one({"id": invite_data.workspace_id}, {"_id": 0})
+    
     for founder_invite in invite_data.invitations:
         startup = await db.startups.find_one({"id": founder_invite.startup_id}, {"_id": 0})
         if not startup:
@@ -201,6 +232,25 @@ async def invite_founders(
         await db.invitations.insert_one(invitation)
         invitation_ids.append(invitation["id"])
         invited_startups.append(startup["name"])
+        
+        # Send invitation email
+        try:
+            email_html = generate_founder_invitation_email(
+                founder_name=founder_invite.founder_name,
+                startup_name=startup["name"],
+                investor_name=workspace.get("fund_name", "your investor"),
+                invitation_token=invitation_token
+            )
+            
+            await send_email(
+                to_email=founder_invite.founder_email,
+                subject=f"Welcome to Startup Intel - Set up your workspace",
+                html_content=email_html
+            )
+            logger.info(f"Founder invitation sent to {founder_invite.founder_email}")
+        except Exception as e:
+            logger.error(f"Failed to send email to {founder_invite.founder_email}: {str(e)}")
+            # Continue even if email fails
     
     logger.info(f"Founder invitations sent: {len(invitation_ids)}")
     
