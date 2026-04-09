@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +32,8 @@ import {
   Folder,
   GitBranch,
   AlertTriangle,
-  Circle
+  Circle,
+  Zap
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -47,6 +49,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { formatCurrency, formatPercentage, formatDate, getChartColor } from '@/lib/formatters';
 import MetricCard from '@/components/MetricCard';
+import FinancialMetricsDashboard from '@/components/FinancialMetricsDashboard';
 
 const FounderHome = () => {
   const { currentUser } = useAuth();
@@ -158,6 +161,30 @@ const FounderHome = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Integrations Quick Access */}
+      <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white rounded-lg">
+                <Zap className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="font-medium text-sm">Connected Integrations</p>
+                <p className="text-xs text-muted-foreground">
+                  Zoho Books • HubSpot • Razorpay • GitHub
+                </p>
+              </div>
+            </div>
+            <Link to="/integrations">
+              <Button size="sm" variant="outline" className="bg-white">
+                Manage
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Top Row - Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4">
@@ -521,6 +548,16 @@ const FounderHome = () => {
                 ))}
               </TableBody>
             </Table>
+          </CardContent>
+        </Card>
+
+        {/* Financial Metrics Dashboard */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Financial Metrics</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FinancialMetricsDashboard />
           </CardContent>
         </Card>
 

@@ -14,6 +14,7 @@ import ReportDetailPage from '@/pages/ReportDetailPage';
 import LiveFeedPage from '@/pages/LiveFeedPage';
 import AdminPage from '@/pages/AdminPage';
 import AdminOnboarding from '@/pages/AdminOnboarding';
+import IntegrationsPage from '@/pages/IntegrationsPage';
 import '@/App.css';
 
 // Route guard component
@@ -69,6 +70,9 @@ function App() {
             <Route path="/onboarding" element={<EnhancedFounderOnboarding />} />
             <Route path="/founder/onboarding" element={<EnhancedFounderOnboarding />} />
             <Route path="/admin/onboarding" element={<AdminOnboarding />} />
+            
+            {/* Integrations */}
+            <Route path="/integrations" element={<IntegrationsPage />} />
             
             {/* Main app routes */}
             <Route element={<MainLayout />}>
@@ -141,6 +145,9 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
+              
+              {/* Integrations */}
+              <Route path="/integrations" element={<IntegrationsPage />} />
             </Route>
             
             {/* Catch all - redirect to home */}
