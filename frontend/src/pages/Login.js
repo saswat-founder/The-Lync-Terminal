@@ -26,9 +26,12 @@ export default function Login() {
 
     try {
       await login(formData.email, formData.password);
+      toast.success(`Welcome back!`);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      const errorMsg = err.message || 'Login failed. Please check your credentials.';
+      setError(errorMsg);
+      toast.error(errorMsg);
     }
   };
 

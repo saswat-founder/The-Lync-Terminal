@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { BarChart3 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -28,13 +29,17 @@ export default function Register() {
 
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      const msg = 'Passwords do not match';
+      setError(msg);
+      toast.error(msg);
       return;
     }
 
     // Validate password length
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+      const msg = 'Password must be at least 6 characters';
+      setError(msg);
+      toast.error(msg);
       return;
     }
 
@@ -48,13 +53,16 @@ export default function Register() {
 
       await register(userData);
       setSuccess(true);
+      toast.success('Account created successfully! Redirecting to login...');
       
       // Redirect to login after 2 seconds
       setTimeout(() => {
         navigate('/login');
       }, 2000);
     } catch (err) {
-      setError(err.message || 'Registration failed. Please try again.');
+      const errorMsg = err.message || 'Registration failed. Please try again.';
+      setError(errorMsg);
+      toast.error(errorMsg);
     }
   };
 

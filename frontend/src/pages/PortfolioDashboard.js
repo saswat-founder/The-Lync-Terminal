@@ -317,10 +317,10 @@ const PortfolioDashboard = () => {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">At Risk</p>
                 <p className="text-3xl font-semibold text-warning tabular-nums">
-                  {portfolioMetrics.healthDistribution.warning}
+                  {actualMetrics.healthDistribution.warning}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {Math.round((portfolioMetrics.healthDistribution.warning / portfolioMetrics.totalStartups) * 100)}% of portfolio
+                  {Math.round((actualMetrics.healthDistribution.warning / actualMetrics.totalStartups) * 100)}% of portfolio
                 </p>
               </div>
               <AlertTriangle className="h-10 w-10 text-warning" />
@@ -334,10 +334,10 @@ const PortfolioDashboard = () => {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Critical</p>
                 <p className="text-3xl font-semibold text-destructive tabular-nums">
-                  {portfolioMetrics.healthDistribution.critical}
+                  {actualMetrics.healthDistribution.critical}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {Math.round((portfolioMetrics.healthDistribution.critical / portfolioMetrics.totalStartups) * 100)}% of portfolio
+                  {Math.round((actualMetrics.healthDistribution.critical / actualMetrics.totalStartups) * 100)}% of portfolio
                 </p>
               </div>
               <AlertCircle className="h-10 w-10 text-destructive" />
@@ -573,4 +573,4 @@ const PortfolioDashboard = () => {
   );
 };
 
-export default PortfolioDashboard;
+export default PortfolioDashboard;rd;

@@ -57,9 +57,33 @@ apiClient.interceptors.response.use(
       }
     }
 
+    // Better error messages for common status codes
+    const errorMessage = error.response?.data?.detail || getErrorMessage(error.response?.status);
+    error.message = errorMessage;
+
     return Promise.reject(error);
   }
 );
+
+// Helper to get user-friendly error messages
+function getErrorMessage(status) {
+  switch (status) {
+    case 400:
+      return 'Invalid request. Please check your input.';
+    case 403:
+      return 'You don\'t have permission to access this resource.';
+    case 404:
+      return 'Resource not found.';
+    case 429:
+      return 'Too many requests. Please try again later.';
+    case 500:
+      return 'Server error. Please try again later.';
+    case 503:
+      return 'Service temporarily unavailable.';
+    default:
+      return 'An error occurred. Please try again.';
+  }
+}
 
 /**
  * API Service Object with all endpoints
