@@ -71,7 +71,29 @@ class StatusCheckCreate(BaseModel):
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Startup Intel API", "version": "1.0.0", "status": "running"}
+
+@api_router.get("/health")
+async def health_check():
+    """
+    Health check endpoint for monitoring and deployment platforms
+    """
+    try:
+        # Check MongoDB connection
+        await db.command('ping')
+        return {
+            "status": "healthy",
+            "database": "connected",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return {
+            "status": "unhealthy",
+            "database": "disconnected",
+            "error": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
 
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
@@ -99,6 +121,20 @@ async def get_status_checks():
 
 # Include the router in the main app
 app.include_router(api_router)
+
+# Configure CORS with environment variable
+allowed_origins = os.environ.get('CORS_ORIGINS', '*').split(',')
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[origin.strip() for origin in allowed_origins] if allowed_origins != ['*'] else ['*'],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Add rate limiting middleware
+from middleware.rate_limit import RateLimitMiddleware
+app.add_middleware(RateLimitMiddleware)
 
 # Include Zoho Books integration routers
 app.include_router(zoho_auth_router, prefix="/api")

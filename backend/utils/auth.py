@@ -6,11 +6,19 @@ import jwt
 from fastapi import HTTPException, status
 from models.user_models import TokenData
 import logging
+from dotenv import load_dotenv
+from pathlib import Path
+
+# Load environment variables
+load_dotenv(Path(__file__).parent.parent / '.env')
 
 logger = logging.getLogger(__name__)
 
 # JWT Configuration
-SECRET_KEY = os.environ.get("SECRET_KEY", "your-secret-key-change-in-production-please-use-env")
+SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable must be set! Generate one with: python -c 'import secrets; print(secrets.token_urlsafe(32))'")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60  # 1 hour
 REFRESH_TOKEN_EXPIRE_DAYS = 7  # 7 days
