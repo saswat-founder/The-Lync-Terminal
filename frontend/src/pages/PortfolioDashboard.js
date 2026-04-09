@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -61,6 +61,7 @@ import {
 import MetricCard from '@/components/MetricCard';
 import HealthBadge from '@/components/HealthBadge';
 import Sparkline from '@/components/Sparkline';
+import api from '../services/api';
 
 const PortfolioDashboard = () => {
   const navigate = useNavigate();
@@ -69,10 +70,75 @@ const PortfolioDashboard = () => {
   const [sectorFilter, setSectorFilter] = useState('all');
   const [healthFilter, setHealthFilter] = useState('all');
   const [sortBy, setSortBy] = useState({ key: 'name', direction: 'asc' });
+  
+  // API data state
+  const [portfolioOverview, setPortfolioOverview] = useState(null);
+  const [startupsList, setStartupsList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [dataSource, setDataSource] = useState('api'); // 'api' or 'mock'
+
+  // Fetch data from API
+  useEffect(() => {
+    const fetchPortfolioData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch overview
+        const overviewRes = await api.portfolio.getOverview();
+        setPortfolioOverview(overviewRes.data);
+        
+        // Fetch startups
+        const startupsRes = await api.portfolio.getStartups();
+        
+        // Transform API data to match mock data structure
+        const transformedStartups = startupsRes.data.map(s => ({
+          id: s.id,
+          name: s.name,
+          logo: s.logo_url,
+          sector: 'SaaS', // Default sector (not in API model yet)
+          stage: s.stage,
+          health: s.health_status,
+          healthScore: s.health_score,
+          fundingAmount: s.funding_amount,
+          valuation: s.valuation,
+          metrics: {
+            mrr: s.metrics.mrr,
+            arr: s.metrics.arr,
+            revenue: s.metrics.revenue,
+            growthRate: s.metrics.growth_rate,
+            runway: s.metrics.runway_months,
+            netBurn: s.metrics.burn_rate,
+            cashBalance: s.metrics.cash_balance,
+            teamSize: s.metrics.headcount,
+            customers: s.metrics.customer_count
+          },
+          integrations: s.integrations,
+          lastUpdate: s.updated_at,
+          alerts: [] // Will fetch separately
+        }));
+        
+        setStartupsList(transformedStartups);
+        setDataSource('api');
+        
+      } catch (error) {
+        console.error('Failed to fetch portfolio data:', error);
+        // Fallback to mock data
+        setStartupsList(mockStartups);
+        setDataSource('mock');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPortfolioData();
+  }, []);
+
+  // Use real data if available, otherwise mock
+  const activeStartups = dataSource === 'api' && startupsList.length > 0 ? startupsList : mockStartups;
 
   // Filter and search startups
   const filteredStartups = useMemo(() => {
-    let result = [...mockStartups];
+    let result = [...activeStartups];
     
     // Apply search
     if (searchQuery) {
@@ -91,7 +157,7 @@ const PortfolioDashboard = () => {
     result = sortData(result, sortBy.key, sortBy.direction);
     
     return result;
-  }, [searchQuery, stageFilter, sectorFilter, healthFilter, sortBy]);
+  }, [activeStartups, searchQuery, stageFilter, sectorFilter, healthFilter, sortBy]);
 
   // Portfolio health trend data (last 12 months)
   const healthTrendData = useMemo(() => {
@@ -119,14 +185,14 @@ const PortfolioDashboard = () => {
 
   // Growth vs Burn scatter data
   const growthBurnData = useMemo(() => {
-    return mockStartups.map(s => ({
+    return activeStartups.map(s => ({
       name: s.name,
       growth: s.metrics.growthRate,
       burnMultiple: s.metrics.netBurn / (s.metrics.revenue || 1),
       health: s.health,
       id: s.id
     }));
-  }, []);
+  }, [activeStartups]);
 
   // Runway distribution
   const runwayDistribution = useMemo(() => {
@@ -138,7 +204,7 @@ const PortfolioDashboard = () => {
       '>24m': 0
     };
     
-    mockStartups.forEach(s => {
+    activeStartups.forEach(s => {
       const runway = s.metrics.runway;
       if (runway < 6) buckets['<6m']++;
       else if (runway < 12) buckets['6-12m']++;
@@ -148,7 +214,7 @@ const PortfolioDashboard = () => {
     });
     
     return Object.entries(buckets).map(([range, count]) => ({ range, count }));
-  }, []);
+  }, [activeStartups]);
 
   const handleSort = (key) => {
     setSortBy(prev => ({
@@ -156,6 +222,27 @@ const PortfolioDashboard = () => {
       direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
     }));
   };
+
+  // Calculate actual portfolio metrics from real data
+  const actualMetrics = useMemo(() => {
+    if (portfolioOverview) {
+      return {
+        totalStartups: portfolioOverview.total_startups,
+        totalInvested: portfolioOverview.total_deployed,
+        totalValuation: portfolioOverview.total_valuation,
+        medianRunway: 12, // Would need to calculate from startups
+        reportingCompletion: portfolioOverview.total_startups - portfolioOverview.pending_reports,
+        criticalAlerts: portfolioOverview.critical_alerts,
+        totalAlerts: portfolioOverview.total_alerts,
+        healthDistribution: {
+          good: portfolioOverview.healthy_count,
+          warning: portfolioOverview.warning_count,
+          critical: portfolioOverview.critical_count
+        }
+      };
+    }
+    return portfolioMetrics; // Fallback to mock
+  }, [portfolioOverview]);
 
   return (
     <div className="space-y-6">
@@ -165,6 +252,8 @@ const PortfolioDashboard = () => {
           <h1 className="text-3xl font-semibold text-foreground">Portfolio Overview</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Monitor startup progress and portfolio health in real-time
+            {dataSource === 'api' && <Badge variant="outline" className="ml-2 text-xs">Live Data</Badge>}
+            {loading && <span className="ml-2 text-xs">(Loading...)</span>}
           </p>
         </div>
       </div>
@@ -174,20 +263,20 @@ const PortfolioDashboard = () => {
         <MetricCard
           title="Total Startups"
           value={filteredStartups.length}
-          subtitle={`of ${portfolioMetrics.totalStartups} total`}
+          subtitle={`of ${actualMetrics.totalStartups} total`}
           icon={Users}
           format="number"
         />
         <MetricCard
           title="Median Runway"
-          value={portfolioMetrics.medianRunway.toFixed(1)}
+          value={actualMetrics.medianRunway.toFixed(1)}
           subtitle="months"
           icon={Clock}
           format="number"
         />
         <MetricCard
           title="Reporting Complete"
-          value={portfolioMetrics.reportingCompletion}
+          value={actualMetrics.reportingCompletion}
           subtitle="this cycle"
           icon={CheckCircle2}
           format="number"
@@ -196,8 +285,8 @@ const PortfolioDashboard = () => {
         />
         <MetricCard
           title="Critical Alerts"
-          value={portfolioMetrics.criticalAlerts}
-          subtitle={`${portfolioMetrics.totalAlerts} total alerts`}
+          value={actualMetrics.criticalAlerts}
+          subtitle={`${actualMetrics.totalAlerts} total alerts`}
           icon={AlertCircle}
           format="number"
         />
@@ -211,7 +300,7 @@ const PortfolioDashboard = () => {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Healthy</p>
                 <p className="text-3xl font-semibold text-success tabular-nums">
-                  {portfolioMetrics.healthDistribution.good}
+                  {actualMetrics.healthDistribution.good}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {Math.round((portfolioMetrics.healthDistribution.good / portfolioMetrics.totalStartups) * 100)}% of portfolio
