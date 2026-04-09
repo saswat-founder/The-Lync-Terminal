@@ -6,6 +6,7 @@ import { Input } from '../components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { BarChart3, TrendingUp, Users, Activity } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function Login() {
   const navigate = useNavigate();
