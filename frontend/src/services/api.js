@@ -119,7 +119,7 @@ const api = {
   // ============ Startup APIs ============
   startups: {
     getById: (id) => 
-      apiClient.get(`/api/startups/${id}`),
+      apiClient.get(`/api/portfolio/startups/${id}`),
     
     getMetrics: (id) => 
       apiClient.get(`/api/startups/${id}/metrics`),

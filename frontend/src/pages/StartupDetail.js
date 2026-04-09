@@ -76,36 +76,63 @@ const StartupDetail = () => {
         logo: apiStartup.logo_url,
         description: apiStartup.description,
         website: apiStartup.website,
-        sector: 'SaaS', // Default
+        sector: 'SaaS', // Default - would come from backend in future
         stage: apiStartup.stage,
         health: apiStartup.health_status,
         healthScore: apiStartup.health_score,
         fundingAmount: apiStartup.funding_amount,
         valuation: apiStartup.valuation,
         founderName: apiStartup.founder_name,
+        businessModel: 'SaaS', // Default - would come from backend in future
+        founders: [{ name: apiStartup.founder_name, role: 'CEO' }], // Transform string to array
+        dataFreshness: 95, // Mock value - would come from backend
+        reporting: {
+          lastReport: apiStartup.last_report_date || new Date().toISOString(),
+          status: 'current',
+          completeness: 95
+        },
         metrics: {
           mrr: apiStartup.metrics.mrr,
           arr: apiStartup.metrics.arr,
           revenue: apiStartup.metrics.revenue,
           growthRate: apiStartup.metrics.growth_rate,
           runway: apiStartup.metrics.runway_months,
+          burn: apiStartup.metrics.burn_rate,
           netBurn: apiStartup.metrics.burn_rate,
+          cash: apiStartup.metrics.cash_balance,
           cashBalance: apiStartup.metrics.cash_balance,
+          headcount: apiStartup.metrics.headcount,
           teamSize: apiStartup.metrics.headcount,
           customers: apiStartup.metrics.customer_count,
-          // Mock historical data for now (would come from API)
+          churnRate: apiStartup.metrics.churn_rate,
+          // SaaS-specific metrics (would come from API in future)
+          nrr: 110, // Mock Net Revenue Retention
+          cac: 5000, // Mock Customer Acquisition Cost
+          ltv: 50000, // Mock Lifetime Value
+          grossMargin: 75, // Mock Gross Margin
+          // Marketplace metrics (mocked)
+          gmv: 0,
+          takeRate: 0,
+          buyers: 0,
+          sellers: 0,
+          // Consumer metrics (mocked)
+          mau: 0,
+          dau: 0,
+          activationRate: 0,
+          retentionD30: 0,
+          // Mock historical data for charts (would come from API)
           revenueHistory: [],
           burnHistory: [],
           cashHistory: []
         },
         integrations: apiStartup.integrations.map(i => ({
-          name: i.name,
-          status: i.connected ? 'connected' : 'disconnected',
+          name: i.name.charAt(0).toUpperCase() + i.name.slice(1), // Capitalize
+          status: i.connected ? 'active' : 'disconnected',
           lastSync: i.last_sync
         })),
-        alerts: [], // Would fetch separately
-        activities: [], // Would fetch separately
-        lastUpdate: apiStartup.updated_at
+        alerts: [], // Would fetch from separate endpoint
+        recentActivity: [], // Would fetch from separate endpoint
+        lastUpdate: apiStartup.created_at
       };
       
       setStartup(transformedStartup);
