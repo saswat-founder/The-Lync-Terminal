@@ -14,7 +14,8 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
-  Loader2
+  Loader2,
+  FileDown
 } from 'lucide-react';
 import {
   Select,
@@ -32,6 +33,7 @@ const ReportsPage = () => {
   const navigate = useNavigate();
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [exportingId, setExportingId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [periodFilter, setPeriodFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -52,6 +54,20 @@ const ReportsPage = () => {
       setReports([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportPDF = async (reportId, e) => {
+    e.stopPropagation();
+    setExportingId(reportId);
+    try {
+      await api.reports.exportPDF(reportId);
+      toast.success('Report exported successfully!');
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('Failed to export report');
+    } finally {
+      setExportingId(null);
     }
   };
 
@@ -306,8 +322,24 @@ const ReportsPage = () => {
                       </>
                     )}
                     
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/report/${report.id}`);
+                    }}>
                       <Eye className="h-4 w-4" />
+                    </Button>
+                    
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={(e) => handleExportPDF(report.id, e)}
+                      disabled={exportingId === report.id}
+                    >
+                      {exportingId === report.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <FileDown className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                 </div>

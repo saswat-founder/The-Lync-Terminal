@@ -173,7 +173,7 @@ const MainLayout = () => {
         <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">
-              © 2024 Startup Intel. Built for StartupTN Portfolio Monitoring.
+              © {new Date().getFullYear()} Startup Intel. Portfolio Intelligence Platform for VCs and Founders.
             </p>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <span>Logged in as: {user?.name}</span>

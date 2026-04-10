@@ -299,6 +299,22 @@ const api = {
     
     updateReport: (reportId, data) => 
       apiClient.put(`/api/reports/${reportId}`, data),
+    
+    exportPDF: async (reportId) => {
+      const response = await apiClient.get(`/api/reports/${reportId}/export/pdf`, {
+        responseType: 'blob'
+      });
+      // Create blob link to download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `report_${reportId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      return response;
+    }
   },
 
   // ============ Activity Feed APIs ============

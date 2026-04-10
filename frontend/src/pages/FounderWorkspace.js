@@ -129,13 +129,20 @@ const FounderHome = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with startup name and logo */}
       <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold text-foreground">Founder Workspace</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {startup.name} • Your operating command center
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="h-14 w-14 rounded-lg bg-primary/10 flex items-center justify-center">
+            <span className="text-2xl font-bold text-primary">
+              {startup.name?.charAt(0) || 'S'}
+            </span>
+          </div>
+          <div>
+            <h1 className="text-3xl font-semibold text-foreground">{startup.name}</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Founder Dashboard • Your operating command center
+            </p>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">

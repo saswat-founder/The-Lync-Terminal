@@ -3,10 +3,17 @@ Alerts, Reports, and Activity Feed Routes
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
+from fastapi.responses import StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import Optional
 from datetime import datetime, timezone, timedelta
 from uuid import uuid4
+from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib import colors
 
 from models.content_models import (
     Alert, AlertsResponse, MarkAlertRead,
@@ -364,3 +371,116 @@ async def create_activity(
     logger.info(f"Activity created: {activity_type} by {current_user.email}")
     
     return {"message": "Activity logged", "activity_id": activity["id"]}
+
+
+
+@router.get("/reports/{report_id}/export/pdf")
+async def export_report_pdf(
+    report_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """Export report as PDF"""
+    # Get report
+    report = await db.reports.find_one({"id": report_id}, {"_id": 0})
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+    
+    # Permission check
+    if current_user.role == "founder":
+        startup = await db.startups.find_one(
+            {"id": report["startup_id"], "founder_email": current_user.email},
+            {"_id": 0}
+        )
+        if not startup:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    
+    # Create PDF
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=72, leftMargin=72,
+                           topMargin=72, bottomMargin=18)
+    
+    # Container for PDF elements
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Custom styles
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#1e293b'),
+        spaceAfter=30
+    )
+    
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=16,
+        textColor=colors.HexColor('#334155'),
+        spaceAfter=12,
+        spaceBefore=12
+    )
+    
+    # Title
+    elements.append(Paragraph(f"{report['startup_name']} - {report['report_type'].title()} Report", title_style))
+    elements.append(Paragraph(f"Period: {report['period']}", styles['Normal']))
+    elements.append(Paragraph(f"Status: {report['status'].title()}", styles['Normal']))
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Summary Metrics Table
+    if report.get('summary_metrics'):
+        elements.append(Paragraph("Summary Metrics", heading_style))
+        metrics = report['summary_metrics']
+        
+        metrics_data = [
+            ['Metric', 'Value'],
+            ['Revenue', f"${metrics.get('revenue', 0):,}"],
+            ['Revenue Growth', f"{metrics.get('revenue_growth', 0)}%"],
+            ['Burn Rate', f"${metrics.get('burn_rate', 0):,}/month"],
+            ['Cash Balance', f"${metrics.get('cash_balance', 0):,}"],
+            ['Runway', f"{metrics.get('runway_months', 0)} months"],
+            ['Customers', f"{metrics.get('customer_count', 0):,}"],
+            ['Team Size', str(metrics.get('team_size', 0))]
+        ]
+        
+        metrics_table = Table(metrics_data, colWidths=[3*inch, 3*inch])
+        metrics_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f1f5f9')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1e293b')),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+            ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e2e8f0'))
+        ]))
+        
+        elements.append(metrics_table)
+        elements.append(Spacer(1, 0.3*inch))
+    
+    # Report Sections
+    for section in report.get('sections', []):
+        elements.append(Paragraph(section['title'], heading_style))
+        elements.append(Paragraph(section['content'], styles['Normal']))
+        elements.append(Spacer(1, 0.2*inch))
+    
+    # Footer info
+    elements.append(Spacer(1, 0.3*inch))
+    elements.append(Paragraph(
+        f"Generated on {datetime.now(timezone.utc).strftime('%B %d, %Y at %H:%M UTC')}",
+        styles['Italic']
+    ))
+    
+    # Build PDF
+    doc.build(elements)
+    buffer.seek(0)
+    
+    # Return as streaming response
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename={report['startup_name']}_{report['period']}_report.pdf"
+        }
+    )

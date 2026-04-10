@@ -33,21 +33,21 @@ const AdminPage = () => {
   const cohorts = [
     {
       id: 'cohort-1',
-      name: 'StartupTN Batch 2025',
+      name: 'Q1 2025 Portfolio',
       startups: mockStartups.filter((_, idx) => idx < 15),
       created: '2025-01-15',
       status: 'active'
     },
     {
       id: 'cohort-2',
-      name: 'StartupTN Batch 2024',
+      name: 'Q2 2024 Portfolio',
       startups: mockStartups.filter((_, idx) => idx >= 15 && idx < 30),
       created: '2024-06-20',
       status: 'active'
     },
     {
       id: 'cohort-3',
-      name: 'StartupTN Batch 2023',
+      name: 'Q3 2023 Portfolio',
       startups: mockStartups.filter((_, idx) => idx >= 30),
       created: '2023-09-10',
       status: 'archived'

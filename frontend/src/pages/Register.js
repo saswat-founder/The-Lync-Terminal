@@ -53,12 +53,24 @@ export default function Register() {
 
       await register(userData);
       setSuccess(true);
-      toast.success('Account created successfully! Redirecting to login...');
       
-      // Redirect to login after 2 seconds
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      // Redirect based on role to onboarding
+      if (formData.role === 'investor') {
+        toast.success('Account created! Redirecting to admin onboarding...');
+        setTimeout(() => {
+          navigate('/admin/onboarding');
+        }, 2000);
+      } else if (formData.role === 'founder') {
+        toast.success('Account created! Redirecting to founder onboarding...');
+        setTimeout(() => {
+          navigate('/founder/onboarding');
+        }, 2000);
+      } else {
+        toast.success('Account created! Redirecting to login...');
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      }
     } catch (err) {
       const errorMsg = err.message || 'Registration failed. Please try again.';
       setError(errorMsg);
