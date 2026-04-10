@@ -104,5 +104,3 @@ frontend/node_modules/.cache/default-development/15.pack
 .env.*.local
 -e 
 # Environment files
-*.env
-*.env.*
